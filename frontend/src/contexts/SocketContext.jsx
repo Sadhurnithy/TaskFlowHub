@@ -17,10 +17,17 @@ export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
   const { user, logout } = useAuth();
 
+  const getSocketUrl = () => {
+    let url = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    // Remove trailing /api if present
+    if (url.endsWith('/api')) url = url.slice(0, -4);
+    return url;
+  };
+
   useEffect(() => {
     if (user) {
       const token = localStorage.getItem('token');
-      const newSocket = io('http://localhost:5000', {
+      const newSocket = io(getSocketUrl(), {
         auth: {
           token
         }

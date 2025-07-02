@@ -16,7 +16,7 @@ const Login = () => {
     script.onload = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '598493594753-7okft7abm47h0fs5b69dj2t36gcqdpog.apps.googleusercontent.com',
+          client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
           auto_select: false,
           cancel_on_tap_outside: true,

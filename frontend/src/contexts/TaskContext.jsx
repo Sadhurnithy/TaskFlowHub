@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useSocket } from './SocketContext';
+import { apiConfig } from '../config/api';
 
 const TaskContext = createContext();
 
@@ -73,7 +74,7 @@ export const TaskProvider = ({ children }) => {
       setError(null);
       const params = new URLSearchParams(filters);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/tasks?${params}`, {
+      const response = await axios.get(`${apiConfig.baseURL}/tasks?${params}`, {
         timeout: 10000, // 10 second timeout
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +106,7 @@ export const TaskProvider = ({ children }) => {
     try {
       setError(null);
       const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/tasks', taskData, {
+      const response = await axios.post(`${apiConfig.baseURL}/tasks`, taskData, {
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
@@ -130,7 +131,7 @@ export const TaskProvider = ({ children }) => {
     try {
       setError(null);
       const token = localStorage.getItem('token');
-      const response = await axios.put(`http://localhost:5000/api/tasks/${taskId}`, updateData, {
+      const response = await axios.put(`${apiConfig.baseURL}/tasks/${taskId}`, updateData, {
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +158,7 @@ export const TaskProvider = ({ children }) => {
     try {
       setError(null);
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/tasks/${taskId}`, {
+      await axios.delete(`${apiConfig.baseURL}/tasks/${taskId}`, {
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
@@ -181,7 +182,7 @@ export const TaskProvider = ({ children }) => {
     try {
       setError(null);
       const token = localStorage.getItem('token');
-      const response = await axios.post(`http://localhost:5000/api/tasks/${taskId}/share`, {
+      const response = await axios.post(`${apiConfig.baseURL}/tasks/${taskId}/share`, {
         email,
         permission
       }, {
@@ -211,7 +212,7 @@ export const TaskProvider = ({ children }) => {
     try {
       setError(null);
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/tasks/stats', {
+      const response = await axios.get(`${apiConfig.baseURL}/tasks/stats`, {
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',
@@ -238,7 +239,7 @@ export const TaskProvider = ({ children }) => {
       console.log('Making API call to get task:', taskId);
       console.log('Token exists:', !!token);
       
-      const response = await axios.get(`http://localhost:5000/api/tasks/${taskId}`, {
+      const response = await axios.get(`${apiConfig.baseURL}/tasks/${taskId}`, {
         timeout: 10000,
         headers: {
           'Content-Type': 'application/json',

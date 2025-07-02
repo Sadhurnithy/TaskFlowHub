@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { apiConfig } from '../config/api';
 
 const AuthContext = createContext();
 
@@ -30,7 +31,7 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const response = await axios.get('http://localhost:5000/api/auth/profile');
+          const response = await axios.get(`${apiConfig.baseURL}/auth/profile`);
           setUser(response.data.data);
         } catch (error) {
           localStorage.removeItem('token');
@@ -46,7 +47,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (idToken) => {
     try {
       setError(null);
-      const response = await axios.post('http://localhost:5000/api/auth/google', {
+      const response = await axios.post(`${apiConfig.baseURL}/auth/google`, {
         idToken
       });
 
@@ -63,7 +64,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post('http://localhost:5000/api/auth/logout');
+      await axios.post(`${apiConfig.baseURL}/auth/logout`);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -75,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/refresh');
+      const response = await axios.post(`${apiConfig.baseURL}/auth/refresh`);
       const { token, user } = response.data.data;
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -89,7 +90,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await axios.put('http://localhost:5000/api/users/profile', profileData);
+      const response = await axios.put(`${apiConfig.baseURL}/users/profile`, profileData);
       setUser(response.data.data);
       return { success: true };
     } catch (error) {
