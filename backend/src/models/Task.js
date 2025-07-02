@@ -164,14 +164,14 @@ taskSchema.methods.hasAccess = function(userId, requiredPermission = 'read') {
   console.log('Owner type:', typeof this.owner);
   console.log('User ID type:', typeof userId);
   
-  const ownerStr = this.owner.toString();
+  const ownerId = (typeof this.owner === 'object' && this.owner._id) ? this.owner._id.toString() : this.owner.toString();
   const userIdStr = userId.toString();
   
-  console.log('Owner string:', ownerStr);
+  console.log('Owner string:', ownerId);
   console.log('User ID string:', userIdStr);
-  console.log('Owner comparison:', ownerStr === userIdStr);
+  console.log('Owner comparison:', ownerId === userIdStr);
   
-  if (ownerStr === userIdStr) {
+  if (ownerId === userIdStr) {
     console.log('User is owner, granting access');
     return true;
   }
