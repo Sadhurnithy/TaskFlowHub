@@ -3,8 +3,6 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -32,7 +30,7 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const response = await axios.get(`${API_URL}/auth/profile`);
+          const response = await axios.get('http://localhost:5000/api/auth/profile');
           setUser(response.data.data);
         } catch (error) {
           localStorage.removeItem('token');
@@ -45,41 +43,27 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const login = async (credential) => {
+  const login = async (idToken) => {
     try {
-      const res = await fetch(`${API_URL}/auth/google`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ credential }),
+      setError(null);
+      const response = await axios.post('http://localhost:5000/api/auth/google', {
+        idToken
       });
-  
-      const data = await res.json();
-  
-      if (!res.ok) {
-        return { success: false, error: data.message || "Auth failed" };
-      }
-  
-      // ✅ Save token in localStorage
-      localStorage.setItem('token', data.token);
-  
-      // ✅ Set axios default Authorization header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-  
-      // ✅ Set user in context
-      setUser(data.user);
-  
-      return { success: true, user: data.user };
-    } catch (err) {
-      return { success: false, error: err.message };
+
+      const { token, user } = response.data.data;
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(user);
+      return { success: true };
+    } catch (error) {
+      setError(error.response?.data?.message || 'Login failed');
+      return { success: false, error: error.response?.data?.message || 'Login failed' };
     }
   };
-  
 
   const logout = async () => {
     try {
-      await axios.post(`${API_URL}/auth/logout`);
+      await axios.post('http://localhost:5000/api/auth/logout');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -91,7 +75,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const response = await axios.post(`${API_URL}/auth/refresh`);
+      const response = await axios.post('http://localhost:5000/api/auth/refresh');
       const { token, user } = response.data.data;
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -105,7 +89,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await axios.put(`${API_URL}/users/profile`, profileData);
+      const response = await axios.put('http://localhost:5000/api/users/profile', profileData);
       setUser(response.data.data);
       return { success: true };
     } catch (error) {
@@ -130,6 +114,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-export { API_URL };
+}; 
