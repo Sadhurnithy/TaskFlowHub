@@ -3,6 +3,11 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const Login = () => {
   const { login, error, setError } = useAuth();
+  // Defensive check for AuthContext
+  if (typeof login !== 'function') {
+    throw new Error('AuthContext is not set up correctly.');
+  }
+  // Note: Cross-Origin-Opener-Policy warning from Google OAuth is safe to ignore unless login is broken.
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -47,24 +52,30 @@ const Login = () => {
   }, []);
 
   const handleCredentialResponse = async (response) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      setIsLoading(true);
-      setError(null);
-      console.log('Google OAuth response received:', response);
-      const result = await login(response.credential);
-      if (!result.success) {
-        console.error('Login failed:', result.error);
-        setError(result.error);
-      } else {
-        console.log('Login successful');
+      if (!response?.credential) {
+        throw new Error("No credential found in response");
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError('Login failed. Please try again.');
+  
+      console.log('Google OAuth response received:', response);
+      
+      const result = await login(response.credential);
+  
+      if (!result || !result.success) {
+        throw new Error(result?.error || "Login failed");
+      }
+  
+      console.log("Login successful!");
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="min-h-screen flex">
