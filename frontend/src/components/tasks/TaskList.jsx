@@ -327,27 +327,34 @@ const TaskList = () => {
               {(!selectedTask.sharedWith || selectedTask.sharedWith.length === 0) ? (
                 <div className="text-xs text-gray-500 italic">This task is not shared with anyone yet.</div>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {selectedTask.sharedWith.map((share, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-2 py-1">
-                      <div className="flex items-center space-x-2">
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between bg-white border border-gray-200 rounded-lg shadow-sm px-3 py-2 hover:shadow-md transition-shadow group"
+                    >
+                      <div className="flex items-center space-x-3">
                         {share.user.picture ? (
-                          <img src={share.user.picture} alt={share.user.name} className="w-6 h-6 rounded-full" />
+                          <img src={share.user.picture} alt={share.user.name} className="w-8 h-8 rounded-full border border-gray-200" />
                         ) : (
-                          <UserIcon className="w-5 h-5 text-gray-400" />
+                          <UserIcon className="w-7 h-7 text-gray-300 border border-gray-200 rounded-full p-1" />
                         )}
-                        <span>{share.user.name}</span>
-                        <span className="text-gray-400">&lt;{share.user.email}&gt;</span>
-                        <span className="capitalize text-gray-500 ml-2">{share.permission}</span>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-900 text-sm">{share.user.name}</span>
+                          <span className="text-xs text-gray-500">{share.user.email}</span>
+                        </div>
+                        <span className="ml-4 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 capitalize border border-gray-200">
+                          {share.permission}
+                        </span>
                       </div>
                       {/* Only owner can remove, and not themselves */}
                       {user && selectedTask.owner && user._id === selectedTask.owner._id && share.user._id !== user._id && (
                         <button
                           onClick={() => handleRemoveShare(share.user._id)}
-                          className="ml-2 text-danger-600 hover:text-danger-800"
+                          className="ml-2 text-danger-600 hover:text-danger-800 p-1 rounded-full transition-colors group-hover:bg-danger-50"
                           title="Remove access"
                         >
-                          <XMarkIcon className="w-4 h-4" />
+                          <XMarkIcon className="w-5 h-5" />
                         </button>
                       )}
                     </div>
