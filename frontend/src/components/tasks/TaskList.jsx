@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTask } from '../../contexts/TaskContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
   FunnelIcon,
   ClipboardDocumentListIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  ShareIcon,
+  UserIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import TaskCard from './TaskCard';
 import CreateTaskModal from './CreateTaskModal';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const TaskList = () => {
-  const { tasks, loading, fetchTasks } = useTask();
+  const { tasks, loading, fetchTasks, shareTask, removeTaskSharing } = useTask();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,6 +27,10 @@ const TaskList = () => {
     priority: '',
     overdue: false
   });
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareData, setShareData] = useState({ email: '', permission: 'read' });
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     const params = Object.fromEntries(searchParams.entries());
@@ -94,6 +103,50 @@ const TaskList = () => {
   });
 
   const hasActiveFilters = filters.status || filters.priority || filters.overdue || searchTerm;
+
+  const handleShare = async (e) => {
+    e.preventDefault();
+    if (!selectedTask) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(shareData.email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    try {
+      setIsSharing(true);
+      const result = await shareTask(selectedTask._id, shareData.email, shareData.permission);
+      if (result.success) {
+        alert('Task shared successfully!');
+        setShowShareModal(false);
+        setShareData({ email: '', permission: 'read' });
+        setSelectedTask(null);
+      } else {
+        alert(`Failed to share task: ${result.error}`);
+      }
+    } catch (error) {
+      alert('Error sharing task. Please try again.');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const openShareModal = (task) => {
+    setSelectedTask(task);
+    setShowShareModal(true);
+    setShareData({ email: '', permission: 'read' });
+  };
+
+  const handleRemoveShare = async (sharedUserId) => {
+    if (!selectedTask) return;
+    if (!window.confirm('Remove this user from shared list?')) return;
+    const result = await removeTaskSharing(selectedTask._id, sharedUserId);
+    if (result.success) {
+      // Update selectedTask with new sharedWith list
+      setSelectedTask(result.task);
+    } else {
+      alert(result.error || 'Failed to remove sharing');
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -239,9 +292,9 @@ const TaskList = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredTasks.map((task) => (
-            <TaskCard key={task._id} task={task} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTasks.map(task => (
+            <TaskCard key={task._id} task={task} onShare={openShareModal} />
           ))}
         </div>
       )}
@@ -252,6 +305,89 @@ const TaskList = () => {
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
         />
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && selectedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+              onClick={() => setShowShareModal(false)}
+            >
+              <span className="sr-only">Close</span>
+              &times;
+            </button>
+            <h2 className="text-lg font-semibold mb-4 flex items-center">
+              <ShareIcon className="w-5 h-5 mr-2" /> Share Task
+            </h2>
+            {/* Shared With List */}
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Already Shared With:</h3>
+              {(!selectedTask.sharedWith || selectedTask.sharedWith.length === 0) ? (
+                <div className="text-xs text-gray-500 italic">This task is not shared with anyone yet.</div>
+              ) : (
+                <div className="space-y-1">
+                  {selectedTask.sharedWith.map((share, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-2 py-1">
+                      <div className="flex items-center space-x-2">
+                        {share.user.picture ? (
+                          <img src={share.user.picture} alt={share.user.name} className="w-6 h-6 rounded-full" />
+                        ) : (
+                          <UserIcon className="w-5 h-5 text-gray-400" />
+                        )}
+                        <span>{share.user.name}</span>
+                        <span className="text-gray-400">&lt;{share.user.email}&gt;</span>
+                        <span className="capitalize text-gray-500 ml-2">{share.permission}</span>
+                      </div>
+                      {/* Only owner can remove, and not themselves */}
+                      {user && selectedTask.owner && user._id === selectedTask.owner._id && share.user._id !== user._id && (
+                        <button
+                          onClick={() => handleRemoveShare(share.user._id)}
+                          className="ml-2 text-danger-600 hover:text-danger-800"
+                          title="Remove access"
+                        >
+                          <XMarkIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <form onSubmit={handleShare} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={shareData.email}
+                  onChange={e => setShareData({ ...shareData, email: e.target.value })}
+                  className="input w-full"
+                  required
+                  placeholder="Enter user's email"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Permission</label>
+                <select
+                  value={shareData.permission}
+                  onChange={e => setShareData({ ...shareData, permission: e.target.value })}
+                  className="input w-full"
+                >
+                  <option value="read">Read</option>
+                  <option value="edit">Edit</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                className="btn-primary w-full"
+                disabled={isSharing}
+              >
+                {isSharing ? 'Sharing...' : 'Share Task'}
+              </button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

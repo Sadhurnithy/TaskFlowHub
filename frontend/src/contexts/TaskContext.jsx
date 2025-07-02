@@ -267,6 +267,29 @@ export const TaskProvider = ({ children }) => {
     }
   };
 
+  const removeTaskSharing = async (taskId, sharedUserId) => {
+    try {
+      setError(null);
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(`${apiConfig.baseURL}/tasks/${taskId}/share/${sharedUserId}`, {
+        timeout: 10000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const updatedTask = response.data.data;
+      setTasks(prev => prev.map(task =>
+        task._id === taskId ? updatedTask : task
+      ));
+      return { success: true, task: updatedTask };
+    } catch (error) {
+      console.error('Remove task sharing error:', error);
+      setError(error.response?.data?.message || 'Failed to remove sharing');
+      return { success: false, error: error.response?.data?.message || 'Failed to remove sharing' };
+    }
+  };
+
   const value = {
     tasks,
     loading,
@@ -279,6 +302,7 @@ export const TaskProvider = ({ children }) => {
     shareTask,
     fetchTaskStats,
     getTaskById,
+    removeTaskSharing,
     setError
   };
 

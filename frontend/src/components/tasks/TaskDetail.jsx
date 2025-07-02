@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTask } from '../../contexts/TaskContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   ArrowLeftIcon,
   PencilIcon,
@@ -11,14 +12,16 @@ import {
   TagIcon,
   CheckCircleIcon,
   ClockIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 const TaskDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getTaskById, updateTask, deleteTask, shareTask } = useTask();
+  const { getTaskById, updateTask, deleteTask, shareTask, removeTaskSharing } = useTask();
+  const { user } = useAuth();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -188,6 +191,17 @@ const TaskDetail = () => {
         dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
         tags: task.tags || []
       });
+    }
+  };
+
+  const handleRemoveShare = async (sharedUserId) => {
+    if (!task) return;
+    if (!window.confirm('Remove this user from shared list?')) return;
+    const result = await removeTaskSharing(task._id, sharedUserId);
+    if (result.success) {
+      setTask(result.task);
+    } else {
+      alert(result.error || 'Failed to remove sharing');
     }
   };
 
@@ -463,22 +477,39 @@ const TaskDetail = () => {
           )}
 
           {/* Shared With */}
-          {task.sharedWith && task.sharedWith.length > 0 && (
-            <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Shared With</h3>
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Shared With</h3>
+            {(!task.sharedWith || task.sharedWith.length === 0) ? (
+              <div className="text-xs text-gray-500 italic">This task is not shared with anyone yet.</div>
+            ) : (
               <div className="space-y-2">
                 {task.sharedWith.map((share, index) => (
                   <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <UserIcon className="w-4 h-4 text-gray-400 mr-2" />
+                    <div className="flex items-center space-x-2">
+                      {share.user.picture ? (
+                        <img src={share.user.picture} alt={share.user.name} className="w-6 h-6 rounded-full" />
+                      ) : (
+                        <UserIcon className="w-4 h-4 text-gray-400" />
+                      )}
                       <span className="text-sm text-gray-900">{share.user.name}</span>
+                      <span className="text-gray-400 text-xs">&lt;{share.user.email}&gt;</span>
+                      <span className="text-xs text-gray-500 capitalize ml-2">{share.permission}</span>
                     </div>
-                    <span className="text-xs text-gray-500 capitalize">{share.permission}</span>
+                    {/* Only owner can remove, and not themselves */}
+                    {user && task.owner && user._id === task.owner._id && share.user._id !== user._id && (
+                      <button
+                        onClick={() => handleRemoveShare(share.user._id)}
+                        className="ml-2 text-danger-600 hover:text-danger-800"
+                        title="Remove access"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -488,6 +519,40 @@ const TaskDetail = () => {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Share Task</h3>
+              {/* Shared With List in Modal */}
+              <div className="mb-4">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Already Shared With:</h4>
+                {(!task.sharedWith || task.sharedWith.length === 0) ? (
+                  <div className="text-xs text-gray-500 italic">This task is not shared with anyone yet.</div>
+                ) : (
+                  <div className="space-y-1">
+                    {task.sharedWith.map((share, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm bg-gray-50 rounded px-2 py-1">
+                        <div className="flex items-center space-x-2">
+                          {share.user.picture ? (
+                            <img src={share.user.picture} alt={share.user.name} className="w-6 h-6 rounded-full" />
+                          ) : (
+                            <UserIcon className="w-5 h-5 text-gray-400" />
+                          )}
+                          <span>{share.user.name}</span>
+                          <span className="text-gray-400">&lt;{share.user.email}&gt;</span>
+                          <span className="capitalize text-gray-500 ml-2">{share.permission}</span>
+                        </div>
+                        {/* Only owner can remove, and not themselves */}
+                        {user && task.owner && user._id === task.owner._id && share.user._id !== user._id && (
+                          <button
+                            onClick={() => handleRemoveShare(share.user._id)}
+                            className="ml-2 text-danger-600 hover:text-danger-800"
+                            title="Remove access"
+                          >
+                            <XMarkIcon className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <form onSubmit={handleShare} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

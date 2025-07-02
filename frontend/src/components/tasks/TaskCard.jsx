@@ -10,7 +10,7 @@ import {
   UserGroupIcon
 } from '@heroicons/react/24/outline';
 
-const TaskCard = ({ task, compact = false }) => {
+const TaskCard = ({ task, compact = false, onShare }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'badge-success';
@@ -175,6 +175,15 @@ const TaskCard = ({ task, compact = false }) => {
           >
             View Details
           </Link>
+          {onShare && (
+            <button
+              onClick={() => onShare(task)}
+              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+              title="Share Task"
+            >
+              Share
+            </button>
+          )}
         </div>
       </div>
     </div>

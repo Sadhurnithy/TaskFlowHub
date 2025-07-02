@@ -1,24 +1,41 @@
 // Email utility functions
 // Note: In a production environment, you would integrate with services like SendGrid, AWS SES, or Nodemailer
 
+const nodemailer = require('nodemailer');
+
 const sendTaskShareEmail = async (recipientEmail, taskTitle, sharerName, permission) => {
   try {
-    // This is a placeholder implementation
-    // In production, you would use a proper email service
-    console.log(`📧 Task Share Email to ${recipientEmail}:`);
-    console.log(`   Task: ${taskTitle}`);
-    console.log(`   Shared by: ${sharerName}`);
-    console.log(`   Permission: ${permission}`);
-    
-    // Example with a hypothetical email service:
-    // await emailService.send({
-    //   to: recipientEmail,
-    //   subject: `Task Shared: ${taskTitle}`,
-    //   template: 'task-share',
-    //   data: { taskTitle, sharerName, permission }
-    // });
-    
-    return { success: true, message: 'Email sent successfully' };
+    // Check for Gmail credentials in environment variables
+    const { GMAIL_USER, GMAIL_PASS } = process.env;
+    if (GMAIL_USER && GMAIL_PASS) {
+      // Create a transporter using Gmail
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: GMAIL_USER,
+          pass: GMAIL_PASS
+        }
+      });
+      // Email content
+      const mailOptions = {
+        from: `TaskFlowHub <${GMAIL_USER}>`,
+        to: recipientEmail,
+        subject: `Task Shared: ${taskTitle}`,
+        html: `<p><b>${sharerName}</b> has shared a task with you on TaskFlowHub.</p>
+               <p><b>Task:</b> ${taskTitle}</p>
+               <p><b>Permission:</b> ${permission}</p>
+               <p>Login to TaskFlowHub to view the task.</p>`
+      };
+      await transporter.sendMail(mailOptions);
+      return { success: true, message: 'Email sent successfully' };
+    } else {
+      // Fallback: log to console in development
+      console.log(`📧 Task Share Email to ${recipientEmail}:`);
+      console.log(`   Task: ${taskTitle}`);
+      console.log(`   Shared by: ${sharerName}`);
+      console.log(`   Permission: ${permission}`);
+      return { success: true, message: 'Email (dev mode) logged to console' };
+    }
   } catch (error) {
     console.error('Email sending failed:', error);
     return { success: false, message: 'Failed to send email' };
